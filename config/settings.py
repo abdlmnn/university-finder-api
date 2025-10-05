@@ -36,7 +36,7 @@ GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
 GOOGLE_API_KEY = config("GOOGLE_API_KEY")
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = ["university-finder-api.onrender.com", "127.0.0.1", "localhost"]
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
@@ -194,8 +194,8 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": False,
 }
 
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",    # React frontend
-# ]
+CORS_ALLOWED_ORIGINS = [
+    "https://university-finder-api.onrender.com",    # React frontend
+]
 
 CORS_ALLOW_ALL_ORIGINS = True
