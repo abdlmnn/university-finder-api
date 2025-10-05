@@ -2,6 +2,9 @@ django
 djangorestframework
 django-allauth
 dj-rest-auth
+dj-database-url
+djangorestframework-simplejwt
+django-cors-headers
 environs
 pillow
 python-dotenv
@@ -9,10 +12,8 @@ requests
 cryptography
 social-auth-app-django
 pipenv
-django-cors-headers
 python-decouple
 psycopg2-binary
-djangorestframework-simplejwt
 google-auth
 google-auth-oauthlib
 google-auth-httplib2
