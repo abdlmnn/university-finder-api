@@ -57,8 +57,6 @@ class UniversityListView(generics.ListAPIView):
 
         return universities
 
-
-
 # --------------------------
 # 2. Search university by name (Google Places API)
 # --------------------------
