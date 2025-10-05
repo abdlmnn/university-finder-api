@@ -26,10 +26,37 @@ class UniversityListView(generics.ListAPIView):
 
     def get_queryset(self):
         country = self.request.query_params.get('country', None)
-        if country:
-            # Optionally, fetch from Hipolabs API if DB is empty
-            return University.objects.filter(country__iexact=country)
-        return University.objects.all()
+
+        if not country:
+            return University.objects.all()
+
+        # Check if there are universities stored for this country
+        qs = University.objects.filter(country__iexact=country)
+        if qs.exists():
+            return qs
+
+        # If not, fetch from Hipolabs API
+        url = f"http://universities.hipolabs.com/search?country={country}"
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+        except requests.RequestException:
+            return University.objects.none()  # Return empty queryset if API fails
+
+        # Optionally save to DB for caching/favorites
+        universities = []
+        for uni in data:
+            name = uni.get("name")
+            if name:
+                obj, created = University.objects.get_or_create(
+                    name=name,
+                    country=country
+                )
+                universities.append(obj)
+
+        return universities
+
 
 
 # --------------------------
