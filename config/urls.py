@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from allauth.socialaccount.views import LoginView
+from allauth import socialaccount
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,6 +28,6 @@ urlpatterns = [
     path('api/auth/', include('allauth.account.urls')), # allauth account
 
     # Social login (Google)
-    path('api/auth/social/login/<str:provider>/', LoginView.as_view(), name='socialaccount_login'),
+    path('api/auth/social/login/<str:provider>/', socialaccount.views.login, name='socialaccount_login'),
     path('api/auth/social/', include('allauth.socialaccount.urls')),
 ]
