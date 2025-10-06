@@ -45,6 +45,7 @@ SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {'access_type': 'online'},
+        'OAUTH_PKCE_ENABLED': True,
         'APP': {
             'client_id': GOOGLE_CLIENT_ID,
             'secret': GOOGLE_CLIENT_SECRET,
@@ -101,10 +102,10 @@ SITE_ID = 2
 # Allauth settings
 
 # Instead of ACCOUNT_EMAIL_REQUIRED
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+# ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 
 # Instead of ACCOUNT_AUTHENTICATION_METHOD
-ACCOUNT_LOGIN_METHODS = {'username'}
+# ACCOUNT_LOGIN_METHODS = {'username'}
 
 REST_USE_JWT = True  # use JWT for authentication
 
