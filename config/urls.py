@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/', include('api.urls')),
     
     path('', home_view, name='home'),
+    path('favorites/', favorites_view, name='favorites'),
 
     # Social Auth and Account URLs
     path('accounts/', include('allauth.urls')),
