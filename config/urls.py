@@ -16,15 +16,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from allauth.socialaccount.views import LoginView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    
+
     # API routes
     path('api/', include('api.urls')),
     path('api/auth/', include('dj_rest_auth.urls')), # login/logout
     path('api/auth/registration/', include('dj_rest_auth.registration.urls')), # registration
+    path('api/auth/', include('allauth.account.urls')), # allauth account
 
     # Social login (Google)
+    path('api/auth/social/login/<str:provider>/', LoginView.as_view(), name='socialaccount_login'),
     path('api/auth/social/', include('allauth.socialaccount.urls')),
 ]
