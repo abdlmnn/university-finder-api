@@ -105,10 +105,10 @@ SITE_ID = 2
 # Allauth settings
 
 # Instead of ACCOUNT_EMAIL_REQUIRED
-# ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 
 # Instead of ACCOUNT_AUTHENTICATION_METHOD
-# ACCOUNT_LOGIN_METHODS = {'username'}
+ACCOUNT_LOGIN_METHODS = {'username'}
 
 REST_USE_JWT = True  # use JWT for authentication
 
@@ -227,7 +227,7 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5174",  
+    "http://localhost:5173",  
     "https://university-finder-api.onrender.com",    # React frontend
 ]
 
