@@ -62,10 +62,46 @@ class UniversityListView(generics.ListAPIView):
         for uni in data:
             name = uni.get("name")
             if name:
+                # Try to get coordinates for the university
+                state_province = uni.get("state-province", "")
+                search_query = f"{name} {state_province} {country}".strip()
+
+                # Get coordinates using Nominatim
+                lat, lng = None, None
+                try:
+                    nominatim_url = "https://nominatim.openstreetmap.org/search"
+                    params = {
+                        "q": search_query,
+                        "format": "json",
+                        "limit": 1,
+                        "addressdetails": 1
+                    }
+                    response = requests.get(nominatim_url, params=params, headers={
+                        'User-Agent': 'UniversityFinder/1.0'
+                    }, timeout=5)
+                    response.raise_for_status()
+                    nominatim_data = response.json()
+
+                    if nominatim_data:
+                        lat = float(nominatim_data[0].get("lat"))
+                        lng = float(nominatim_data[0].get("lon"))
+                except:
+                    pass  # Continue without coordinates if geocoding fails
+
                 obj, created = University.objects.get_or_create(
                     name=name,
-                    country=country
+                    country=country,
+                    defaults={'lat': lat, 'lng': lng}
                 )
+
+                # Update coordinates if they weren't set before
+                if created and lat and lng:
+                    pass  # Already set in defaults
+                elif not obj.lat and lat and lng:
+                    obj.lat = lat
+                    obj.lng = lng
+                    obj.save()
+
                 universities.append(obj)
 
         return universities

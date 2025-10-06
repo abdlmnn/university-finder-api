@@ -47,8 +47,9 @@ CONTENT_SECURITY_POLICY = {
         'default-src': ("'self'",),
         'script-src': ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https://maps.googleapis.com", "https://maps.gstatic.com"),
         'style-src': ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://maps.googleapis.com", "https://maps.gstatic.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"),
+        'style-src-elem': ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://maps.googleapis.com", "https://maps.gstatic.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"),
         'img-src': ("'self'", "data:", "https:", "https://maps.googleapis.com", "https://maps.gstatic.com"),
-        'connect-src': ("'self'", "https://maps.googleapis.com", "https://maps.gstatic.com"),
+        'connect-src': ("'self'", "https://maps.googleapis.com", "https://maps.gstatic.com", "https://cdn.jsdelivr.net"),
         'font-src': ("'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"),
         'frame-src': ("'self'",),
     }
