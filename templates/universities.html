@@ -41,31 +41,6 @@
         margin-bottom: 30px;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         text-align: center;
-        position: relative;
-      }
-
-      .map-reload-btn {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        border: none;
-        border-radius: 8px;
-        padding: 8px 16px;
-        font-weight: 600;
-        color: white;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .map-reload-btn:hover {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%);
-        transform: translateY(-1px);
-        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
       }
 
       .header-title {
@@ -346,7 +321,7 @@
 
       .map-section {
         position: sticky;
-        top: 43px;
+        top: 55px;
         height: fit-content;
       }
 
@@ -359,6 +334,38 @@
         margin-top: 30px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         border: 1px solid rgba(255, 255, 255, 0.2);
+        position: relative;
+      }
+
+      .map-reload-btn {
+        position: absolute;
+        top: 65px;
+        right: 12px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .map-reload-btn:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+      }
+
+      .map-header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-right: 120px; /* Space for the button */
       }
 
       .map-header h3 {
@@ -374,7 +381,7 @@
       }
 
       .map-container {
-        height: 500px;
+        height: 450px;
         border-radius: 15px;
         overflow: hidden;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -422,10 +429,6 @@
     <div class="main-container" style="padding-top: 100px;">
       <!-- Header Section -->
       <div class="header-section">
-        <button type="button" class="map-reload-btn" onclick="reloadMap()">
-          <i class="fas fa-sync-alt"></i>Reload Map
-        </button>
-
         <h1 class="header-title">Universities in {{ selected_country|default:"Philippines" }}</h1>
         <p class="header-subtitle">Discover universities from around the world</p>
 
@@ -523,8 +526,15 @@
         <!-- Interactive Map Section -->
         <div class="map-section">
           <div class="map-header">
-            <h3><i class="fas fa-map-marked-alt"></i> University Locations</h3>
-            <p>Click on any university to see its location on the map</p>
+            <div class="map-header-content">
+              <div>
+                <h3><i class="fas fa-map-marked-alt"></i> University Locations</h3>
+                <p>Click "Locate" on any university to see its location on the map</p>
+              </div>
+            </div>
+            <button type="button" class="map-reload-btn" onclick="reloadMap()">
+              <i class="fas fa-sync-alt"></i>Reload Map
+            </button>
           </div>
           <div id="map" class="map-container"></div>
         </div>
@@ -539,6 +549,7 @@ let map;
 let markers = [];
 let universityLocations = [];
 let mapId = '';
+let currentInfoWindow = null; // Track the currently open info window
 
 // Global callback for Google Maps
 window.initGoogleMaps = function() {
@@ -695,6 +706,11 @@ function showUniversityLocation(universityId, name, country) {
 }
 
 function createTemporaryMarker(location) {
+    // Close any existing info window first
+    if (currentInfoWindow) {
+        currentInfoWindow.close();
+    }
+
     let marker;
 
     if (mapId) {
@@ -728,7 +744,7 @@ function createTemporaryMarker(location) {
         });
     }
 
-    // Add info window
+    // Create info window
     const infoWindow = new google.maps.InfoWindow({
         content: `
             <div style="max-width: 200px;">
@@ -741,12 +757,19 @@ function createTemporaryMarker(location) {
         `
     });
 
+    // Set up click listener
     marker.addListener('click', () => {
+        // Close any existing info window
+        if (currentInfoWindow) {
+            currentInfoWindow.close();
+        }
         infoWindow.open(map, marker);
+        currentInfoWindow = infoWindow;
     });
 
-    // Auto-open the info window
+    // Auto-open the info window and set as current
     infoWindow.open(map, marker);
+    currentInfoWindow = infoWindow;
 
     // Store temporary marker for cleanup (optional)
     markers.push(marker);
