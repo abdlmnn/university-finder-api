@@ -83,11 +83,11 @@ INSTALLED_APPS = [
 
     "corsheaders",              # CORS (React Native/frontend access)
 
-    'django.contrib.sites',  # required by allauth
-    "allauth",                  # Account management
+    'django.contrib.sites',
+    'allauth',
     "allauth.account",
-    "allauth.socialaccount",    # Social login
-    'allauth.socialaccount.providers.google',  # Google OAuth
+    "allauth.socialaccount",
+    'allauth.socialaccount.providers.google',
     'dj_rest_auth',
     'dj_rest_auth.registration',
 
@@ -96,7 +96,7 @@ INSTALLED_APPS = [
     'api',                      # Your app
 ]
 
-SITE_ID = 1
+SITE_ID = 2
 
 # Allauth settings
 
@@ -113,14 +113,12 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware", # must be above CommonMiddleware
+    'allauth.account.middleware.AccountMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
-    # Add this line:
-    'allauth.account.middleware.AccountMiddleware',
 ]
 
 AUTHENTICATION_BACKENDS = (
@@ -133,7 +131,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
