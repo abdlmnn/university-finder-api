@@ -41,6 +41,19 @@ GOOGLE_API_KEY = config("GOOGLE_API_KEY")
 
 ALLOWED_HOSTS = ["university-finder-api.onrender.com", "127.0.0.1", "localhost"]
 
+# Content Security Policy for Google Maps (django-csp 4.0 format)
+CONTENT_SECURITY_POLICY = {
+    'DIRECTIVES': {
+        'default-src': ("'self'",),
+        'script-src': ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https://maps.googleapis.com", "https://maps.gstatic.com"),
+        'style-src': ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://maps.googleapis.com", "https://maps.gstatic.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"),
+        'img-src': ("'self'", "data:", "https:", "https://maps.googleapis.com", "https://maps.gstatic.com"),
+        'connect-src': ("'self'", "https://maps.googleapis.com", "https://maps.gstatic.com"),
+        'font-src': ("'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"),
+        'frame-src': ("'self'",),
+    }
+}
+
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': [
@@ -113,6 +126,7 @@ INSTALLED_APPS = [
     'rest_framework',
 
     "corsheaders",              # CORS (React Native/frontend access)
+    "csp",                      # Content Security Policy
 
     'django.contrib.sites',
     'allauth',
@@ -142,6 +156,7 @@ REST_USE_JWT = True  # use JWT for authentication
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'csp.middleware.CSPMiddleware',  # Content Security Policy
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware", # must be above CommonMiddleware
     'allauth.account.middleware.AccountMiddleware',

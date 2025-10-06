@@ -19,145 +19,6 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
-    <script>
-      // Global variables
-      let map;
-      let markers = [];
-      let universityLocations = [];
-
-      // Global callback for Google Maps
-      window.initGoogleMaps = function() {
-        console.log('Google Maps API fully loaded and ready');
-
-        // Ensure DOM is ready before initializing map
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', function() {
-            initMap();
-          });
-        } else {
-          // DOM is already ready
-          initMap();
-        }
-      };
-
-      // Load Google Maps API asynchronously
-      (function() {
-        console.log('Loading Google Maps API...');
-        console.log('API Key available:', '{{ google_api_key|length }}' > 0 ? 'Yes' : 'No');
-
-        const script = document.createElement('script');
-        script.src = 'https://maps.googleapis.com/maps/api/js?key={{ google_api_key }}&libraries=places&callback=initGoogleMaps';
-        script.async = true;
-        script.defer = true;
-
-        script.onerror = function() {
-          console.error('Failed to load Google Maps API');
-          showMapError('Failed to load Google Maps. Please check your internet connection.');
-        };
-
-        document.head.appendChild(script);
-      })();
-
-      // Show map error function (defined early for availability)
-      function showMapError(message) {
-        const mapContainer = document.getElementById('map');
-        if (mapContainer) {
-          mapContainer.innerHTML = `
-              <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: rgba(255,255,255,0.9); border-radius: 15px; padding: 20px;">
-                  <div style="text-align: center; color: #718096; max-width: 300px;">
-                      <i class="fas fa-map-marked-alt" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5; color: #667eea;"></i>
-                      <h4 style="margin: 0 0 10px 0; color: #4a5568;">Interactive Map Unavailable</h4>
-                      <p style="margin: 0 0 15px 0; font-size: 14px; line-height: 1.5;">${message}</p>
-                      <div style="background: rgba(102, 126, 234, 0.1); padding: 10px; border-radius: 8px; border-left: 3px solid #667eea;">
-                          <p style="margin: 0; font-size: 13px; color: #4a5568;">
-                              <strong>✅ University search still works perfectly!</strong><br>
-                              Browse and favorite universities above.
-                          </p>
-                      </div>
-                  </div>
-              </div>
-          `;
-        }
-      }
-
-      // Initialize map function
-      async function initMap() {
-        try {
-          console.log('Initializing Google Maps...');
-
-          // Check if map div exists
-          const mapDiv = document.getElementById('map');
-          if (!mapDiv) {
-            console.error('Map div not found in DOM');
-            showMapError('Map container not found. Please refresh the page.');
-            return;
-          }
-
-          // Default center (will be updated when locations are loaded)
-          const defaultCenter = { lat: 14.5995, lng: 120.9842 }; // Manila, Philippines
-
-          map = new google.maps.Map(mapDiv, {
-              zoom: 6,
-              center: defaultCenter,
-              styles: [
-                  {
-                      featureType: 'water',
-                      elementType: 'geometry',
-                      stylers: [{ color: '#e9e9e9' }, { lightness: 17 }]
-                  },
-                  {
-                      featureType: 'landscape',
-                      elementType: 'geometry',
-                      stylers: [{ color: '#f5f5f5' }, { lightness: 20 }]
-                  },
-                  {
-                      featureType: 'road.highway',
-                      elementType: 'geometry.fill',
-                      stylers: [{ color: '#ffffff' }, { lightness: 17 }]
-                  },
-                  {
-                      featureType: 'road.highway',
-                      elementType: 'geometry.stroke',
-                      stylers: [{ color: '#ffffff' }, { lightness: 29 }, { weight: 0.2 }]
-                  },
-                  {
-                      featureType: 'road.arterial',
-                      elementType: 'geometry',
-                      stylers: [{ color: '#ffffff' }, { lightness: 18 }]
-                  },
-                  {
-                      featureType: 'road.local',
-                      elementType: 'geometry',
-                      stylers: [{ color: '#ffffff' }, { lightness: 16 }]
-                  },
-                  {
-                      featureType: 'poi',
-                      elementType: 'geometry',
-                      stylers: [{ color: '#f5f5f5' }, { lightness: 21 }]
-                  },
-                  {
-                      featureType: 'poi.park',
-                      elementType: 'geometry',
-                      stylers: [{ color: '#dedede' }, { lightness: 21 }]
-                  }
-              ]
-          });
-
-          console.log('Google Maps initialized successfully, loading university locations...');
-
-          // Load university locations
-          await loadUniversityLocations();
-
-        } catch (error) {
-          console.error('Error initializing map:', error);
-          if (error.message.includes('BillingNotEnabled') || error.message.includes('not loaded')) {
-              showMapError('Google Maps is currently unavailable. Please check your billing setup or try again later.');
-          } else {
-              showMapError('Failed to load the map. Please try refreshing the page.');
-          }
-        }
-      }
-    </script>
     <style>
       body {
         font-family: "Inter", sans-serif;
@@ -398,6 +259,11 @@
         text-align: center;
       }
 
+      .university-card:hover {
+        cursor: pointer;
+        transform: translateY(-3px);
+      }
+
       .content-layout {
         display: grid;
         grid-template-columns: 1fr 400px;
@@ -445,11 +311,6 @@
         border: 1px solid rgba(255, 255, 255, 0.2);
       }
 
-      .university-card:hover {
-        cursor: pointer;
-        transform: translateY(-3px);
-      }
-
       @media (max-width: 768px) {
         .universities-grid {
           grid-template-columns: 1fr;
@@ -481,19 +342,7 @@
           width: 100%;
         }
 
-        .content-layout {
-          grid-template-columns: 1fr;
-          gap: 20px;
-        }
-
-        .map-section {
-          position: static;
-          order: -1;
-        }
-
-        .map-container {
-          height: 300px;
-        }
+        /* No map section to handle */
       }
     </style>
   </head>
@@ -592,7 +441,7 @@
           {% endif %}
         </div>
 
-        <!-- Google Maps Section -->
+        <!-- Interactive Map Section -->
         <div class="map-section">
           <div class="map-header">
             <h3><i class="fas fa-map-marked-alt"></i> University Locations</h3>
@@ -606,12 +455,153 @@
 </html>
 
 <script>
+// Global variables
+let map;
+let markers = [];
+let universityLocations = [];
+let mapId = '';
 
+// Global callback for Google Maps
+window.initGoogleMaps = function() {
+    console.log('Google Maps API fully loaded and ready');
+
+    // Ensure DOM is ready before initializing map
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+        });
+    } else {
+        // DOM is already ready
+        initMap();
+    }
+};
+
+// Load Google Maps API asynchronously
+(function() {
+    console.log('Loading Google Maps API...');
+    console.log('API Key available:', '{{ google_api_key|length }}' > 0 ? 'Yes' : 'No');
+
+    const script = document.createElement('script');
+    script.src = 'https://maps.googleapis.com/maps/api/js?key={{ google_api_key }}&libraries=places&callback=initGoogleMaps';
+    script.async = true;
+    script.defer = true;
+
+    script.onerror = function() {
+        console.error('Failed to load Google Maps API');
+        showMapError('Failed to load Google Maps. Please check your internet connection.');
+    };
+
+    document.head.appendChild(script);
+})();
+
+// Show map error function (defined early for availability)
+function showMapError(message) {
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+        mapContainer.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: rgba(255,255,255,0.9); border-radius: 15px; padding: 20px;">
+                <div style="text-align: center; color: #718096; max-width: 300px;">
+                    <i class="fas fa-map-marked-alt" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5; color: #667eea;"></i>
+                    <h4 style="margin: 0 0 10px 0; color: #4a5568;">Interactive Map Unavailable</h4>
+                    <p style="margin: 0 0 15px 0; font-size: 14px; line-height: 1.5;">${message}</p>
+                    <div style="background: rgba(102, 126, 234, 0.1); padding: 10px; border-radius: 8px; border-left: 3px solid #667eea;">
+                        <p style="margin: 0; font-size: 13px; color: #4a5568;">
+                            <strong>✅ University search still works perfectly!</strong><br>
+                            Browse and favorite universities above.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Initialize map function
+async function initMap() {
+    try {
+        console.log('Initializing Google Maps...');
+
+        // Check if map div exists
+        const mapDiv = document.getElementById('map');
+        if (!mapDiv) {
+            console.error('Map div not found in DOM');
+            showMapError('Map container not found. Please refresh the page.');
+            return;
+        }
+
+        // Default center (will be updated when locations are loaded)
+        const defaultCenter = { lat: 14.5995, lng: 120.9842 }; // Manila, Philippines
+
+        // Set global mapId for use in other functions
+        mapId = '{{ google_map_id|default:"" }}';
+
+        map = new google.maps.Map(mapDiv, {
+            zoom: 6,
+            center: defaultCenter,
+            mapId: mapId || undefined, // Use Map ID if available
+            styles: [
+                {
+                    featureType: 'water',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#e9e9e9' }, { lightness: 17 }]
+                },
+                {
+                    featureType: 'landscape',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#f5f5f5' }, { lightness: 20 }]
+                },
+                {
+                    featureType: 'road.highway',
+                    elementType: 'geometry.fill',
+                    stylers: [{ color: '#ffffff' }, { lightness: 17 }]
+                },
+                {
+                    featureType: 'road.highway',
+                    elementType: 'geometry.stroke',
+                    stylers: [{ color: '#ffffff' }, { lightness: 29 }, { weight: 0.2 }]
+                },
+                {
+                    featureType: 'road.arterial',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#ffffff' }, { lightness: 18 }]
+                },
+                {
+                    featureType: 'road.local',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#ffffff' }, { lightness: 16 }]
+                },
+                {
+                    featureType: 'poi',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#f5f5f5' }, { lightness: 21 }]
+                },
+                {
+                    featureType: 'poi.park',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#dedede' }, { lightness: 21 }]
+                }
+            ]
+        });
+
+        console.log('Google Maps initialized successfully, loading university locations...');
+
+        // Load university locations
+        await loadUniversityLocations();
+
+    } catch (error) {
+        console.error('Error initializing map:', error);
+        if (error.message.includes('BillingNotEnabled') || error.message.includes('not loaded')) {
+            showMapError('Google Maps is currently unavailable. Please check your billing setup or try again later.');
+        } else {
+            showMapError('Failed to load the map. Please try refreshing the page.');
+        }
+    }
+}
 
 function showUniversityLocation(universityId, name, country) {
     console.log('Showing location for:', name, 'ID:', universityId);
 
-    // Find the university location
+    // Find the university location in our cache
     const location = universityLocations.find(loc => loc.id === universityId);
 
     if (location) {
@@ -621,9 +611,12 @@ function showUniversityLocation(universityId, name, country) {
         map.setZoom(15);
 
         // Find and click the corresponding marker
-        const marker = markers.find(m => m.getTitle() === name);
+        const marker = markers.find(m => m.title === name);
         if (marker) {
+            console.log('Found marker, triggering click');
             google.maps.event.trigger(marker, 'click');
+        } else {
+            console.log('Marker not found for:', name);
         }
     } else {
         console.log('Location not found in cache, searching for:', name, country);
@@ -641,22 +634,58 @@ async function searchForUniversity(name, country) {
             map.setCenter({ lat: data.lat, lng: data.lng });
             map.setZoom(15);
 
-            // Add a temporary marker
-            new google.maps.Marker({
-                position: { lat: data.lat, lng: data.lng },
-                map: map,
-                title: name,
-                icon: {
-                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="20" cy="20" r="18" fill="#667eea" stroke="white" stroke-width="3"/>
-                            <text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">🎓</text>
-                        </svg>
-                    `),
-                    scaledSize: new google.maps.Size(40, 40),
-                    anchor: new google.maps.Point(20, 40)
-                }
+            let marker;
+
+            if (mapId) {
+                // Use AdvancedMarkerElement when Map ID is available
+                marker = new google.maps.marker.AdvancedMarkerElement({
+                    map: map,
+                    position: { lat: data.lat, lng: data.lng },
+                    title: name,
+                    content: new google.maps.marker.PinElement({
+                        background: '#667eea',
+                        borderColor: '#ffffff',
+                        glyphColor: '#ffffff',
+                    }).element
+                });
+            } else {
+                // Use regular Marker when no Map ID
+                marker = new google.maps.Marker({
+                    position: { lat: data.lat, lng: data.lng },
+                    map: map,
+                    title: name,
+                    icon: {
+                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                            <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="20" cy="20" r="18" fill="#667eea" stroke="white" stroke-width="3"/>
+                                <text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">🎓</text>
+                            </svg>
+                        `),
+                        scaledSize: new google.maps.Size(40, 40),
+                        anchor: new google.maps.Point(20, 40)
+                    }
+                });
+            }
+
+            // Add info window
+            const infoWindow = new google.maps.InfoWindow({
+                content: `
+                    <div style="max-width: 200px;">
+                        <h5 style="margin: 0 0 8px 0; color: #4a5568;">${name}</h5>
+                        <p style="margin: 0; color: #718096; font-size: 14px;">
+                            <i class="fas fa-map-marker-alt" style="margin-right: 5px;"></i>
+                            ${data.address || `${name}, ${country}`}
+                        </p>
+                    </div>
+                `
             });
+
+            marker.addListener('click', () => {
+                infoWindow.open(map, marker);
+            });
+
+            // Store temporary marker for cleanup
+            markers.push(marker);
         }
     } catch (error) {
         console.error('Error searching for university:', error);
@@ -673,7 +702,6 @@ async function loadUniversityLocations() {
         console.log('API response status:', response.status);
 
         const locations = await response.json();
-        console.log('Received locations:', locations.length, 'universities');
 
         // Clear existing markers
         markers.forEach(marker => marker.setMap(null));
@@ -685,21 +713,38 @@ async function loadUniversityLocations() {
             const bounds = new google.maps.LatLngBounds();
 
             locations.forEach(location => {
-                const marker = new google.maps.Marker({
-                    position: { lat: location.lat, lng: location.lng },
-                    map: map,
-                    title: location.name,
-                    icon: {
-                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                            <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="20" cy="20" r="18" fill="#667eea" stroke="white" stroke-width="3"/>
-                                <text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">🎓</text>
-                            </svg>
-                        `),
-                        scaledSize: new google.maps.Size(40, 40),
-                        anchor: new google.maps.Point(20, 40)
-                    }
-                });
+                let marker;
+
+                if (mapId) {
+                    // Use AdvancedMarkerElement when Map ID is available (no deprecation warning)
+                    marker = new google.maps.marker.AdvancedMarkerElement({
+                        map: map,
+                        position: { lat: location.lat, lng: location.lng },
+                        title: location.name,
+                        content: new google.maps.marker.PinElement({
+                            background: '#667eea',
+                            borderColor: '#ffffff',
+                            glyphColor: '#ffffff',
+                        }).element
+                    });
+                } else {
+                    // Use regular Marker when no Map ID (shows deprecation warning but still works)
+                    marker = new google.maps.Marker({
+                        position: { lat: location.lat, lng: location.lng },
+                        map: map,
+                        title: location.name,
+                        icon: {
+                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="20" cy="20" r="18" fill="#667eea" stroke="white" stroke-width="3"/>
+                                    <text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">🎓</text>
+                                </svg>
+                            `),
+                            scaledSize: new google.maps.Size(40, 40),
+                            anchor: new google.maps.Point(20, 40)
+                        }
+                    });
+                }
 
                 // Add info window
                 const infoWindow = new google.maps.InfoWindow({
@@ -719,7 +764,7 @@ async function loadUniversityLocations() {
                 });
 
                 markers.push(marker);
-                bounds.extend(marker.getPosition());
+                bounds.extend(marker.position);
             });
 
             // Fit map to show all markers
@@ -747,15 +792,15 @@ async function loadUniversityLocations() {
 
 // Initialize map when page loads - Google Maps will call initGoogleMaps when ready
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('Page loaded, waiting for Google Maps API...');
+    console.log('Page loaded, waiting for Google Maps API...');
 
-  // Set a timeout in case Google Maps fails to load
-  setTimeout(function() {
-    if (typeof google === 'undefined' || !google.maps) {
-      console.error('Google Maps failed to load within timeout');
-      showMapError('Google Maps could not be loaded. Please check your internet connection and try again.');
-    }
-  }, 15000); // 15 second timeout (increased)
+    // Set a timeout in case Google Maps fails to load
+    setTimeout(function() {
+        if (typeof google === 'undefined' || !google.maps) {
+            console.error('Google Maps failed to load within timeout');
+            showMapError('Google Maps could not be loaded. Please check your internet connection and try again.');
+        }
+    }, 15000); // 15 second timeout (increased)
 });
 
 // Reload locations when country changes

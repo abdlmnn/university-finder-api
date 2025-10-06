@@ -71,7 +71,7 @@ class UniversityListView(generics.ListAPIView):
         return universities
 
 # --------------------------
-# 2. Search university by name (Google Places API)
+# 2. Search university by name (OpenStreetMap Nominatim API)
 # --------------------------
 class UniversitySearchView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -81,31 +81,40 @@ class UniversitySearchView(APIView):
         if not name:
             return Response({"error": "Missing 'name' parameter"}, status=400)
 
-        url = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
+        # Use OpenStreetMap Nominatim API (free, no API key needed)
+        url = "https://nominatim.openstreetmap.org/search"
         params = {
-            "input": name,
-            "inputtype": "textquery",
-            "fields": "geometry,name,formatted_address",
-            "key": GOOGLE_API_KEY
+            "q": name,
+            "format": "json",
+            "limit": 1,
+            "addressdetails": 1,
+            "extratags": 1
         }
 
-        response = requests.get(url, params=params).json()
+        try:
+            response = requests.get(url, params=params, headers={
+                'User-Agent': 'UniversityFinder/1.0'  # Required by Nominatim
+            }, timeout=10)
+            response.raise_for_status()
+            data = response.json()
 
-        if 'candidates' in response and len(response['candidates']) > 0:
-            candidate = response['candidates'][0]
-            data = {
-                "name": candidate.get("name"),
-                "address": candidate.get("formatted_address"),
-                "lat": candidate['geometry']['location']['lat'],
-                "lng": candidate['geometry']['location']['lng']
-            }
-            return Response(data)
+            if data and len(data) > 0:
+                result = data[0]
+                return Response({
+                    "name": result.get("display_name", "").split(",")[0],  # Get just the name part
+                    "address": result.get("display_name"),
+                    "lat": float(result.get("lat")),
+                    "lng": float(result.get("lon"))
+                })
+
+        except requests.RequestException as e:
+            return Response({"error": f"Geocoding service unavailable: {str(e)}"}, status=503)
 
         return Response({"error": "University not found"}, status=404)
 
 
 # --------------------------
-# 3. Get university locations for map display
+# 3. Get university locations for map display (OpenStreetMap Nominatim)
 # --------------------------
 class UniversityLocationsView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -118,30 +127,32 @@ class UniversityLocationsView(APIView):
 
         locations = []
         for uni in universities[:20]:  # Limit to 20 for performance
-            # Try to get coordinates from Places API
-            url = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
+            # Try to get coordinates from OpenStreetMap Nominatim (free)
+            url = "https://nominatim.openstreetmap.org/search"
             params = {
-                "input": f"{uni.name} {uni.country}",
-                "inputtype": "textquery",
-                "fields": "geometry,name,formatted_address,place_id",
-                "key": GOOGLE_API_KEY
+                "q": f"{uni.name} {uni.country}",
+                "format": "json",
+                "limit": 1,
+                "addressdetails": 1
             }
 
             try:
-                response = requests.get(url, params=params, timeout=5)
+                response = requests.get(url, params=params, headers={
+                    'User-Agent': 'UniversityFinder/1.0'  # Required by Nominatim
+                }, timeout=5)
                 response.raise_for_status()
                 data = response.json()
 
-                if 'candidates' in data and len(data['candidates']) > 0:
-                    candidate = data['candidates'][0]
+                if data and len(data) > 0:
+                    result = data[0]
                     location_data = {
                         "id": uni.id,
                         "name": uni.name,
                         "country": uni.country,
-                        "lat": candidate['geometry']['location']['lat'],
-                        "lng": candidate['geometry']['location']['lng'],
-                        "address": candidate.get('formatted_address', ''),
-                        "place_id": candidate.get('place_id', '')
+                        "lat": float(result.get("lat")),
+                        "lng": float(result.get("lon")),
+                        "address": result.get("display_name", f"{uni.name}, {uni.country}"),
+                        "place_id": result.get("place_id", "")
                     }
                     locations.append(location_data)
                 else:

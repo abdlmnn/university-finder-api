@@ -1,3 +1,4 @@
+import os
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from .models import University, FavoriteUniversity
@@ -66,6 +67,7 @@ def home_view(request):
         'loading': loading,
         'error': error,
         'google_api_key': config('GOOGLE_API_KEY'),
+        'google_map_id': os.getenv('GOOGLE_MAP_ID', ''),  # Pass Map ID to template
     }
 
     # Use different templates based on the URL

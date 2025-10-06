@@ -1,6 +1,8 @@
 # University Finder API
 
-## Google OAuth Setup
+## Authentication & Geocoding Setup
+
+### Google OAuth Setup
 
 To enable Google authentication, follow these steps:
 
@@ -17,40 +19,70 @@ To enable Google authentication, follow these steps:
      (Remember to change ACCOUNT_DEFAULT_HTTP_PROTOCOL back to 'https' in production)
 9. Copy the Client ID and Client Secret
 
-10. Update your `.env` file with the credentials:
+10. **Optional - For Advanced Markers (removes deprecation warning):**
+
+    - In Google Cloud Console, go to "Maps Management" > "Map IDs"
+    - Create a new Map ID
+    - Copy the Map ID and add it to your `.env`:
+      ```
+      GOOGLE_MAP_ID=your-map-id-here
+      ```
+
+11. Update your `.env` file with the credentials:
 
     ```
     GOOGLE_CLIENT_ID=your-actual-client-id
     GOOGLE_CLIENT_SECRET=your-actual-client-secret
     ```
 
-11. Run the Django server and visit `/accounts/google/login/` to test Google authentication
+12. Run the Django server and visit `/accounts/google/login/` to test Google authentication
 
-## Google Maps Setup (Optional)
+### Geocoding (University Locations)
 
-The application includes optional Google Maps integration for university locations. The university search and all other features work perfectly without maps.
+**This app uses OpenStreetMap Nominatim API (FREE - No API keys required!)**
 
-### To Enable Maps (Optional):
-1. **Enable Billing**: Google Maps requires billing to be enabled on your Google Cloud project
-2. **Enable APIs**: Make sure both "Maps JavaScript API" and "Places API" are enabled
-3. **API Key**: The same `GOOGLE_API_KEY` from your `.env` file is used for maps
+- ✅ **No billing setup needed**
+- ✅ **No API keys required**
+- ✅ **Completely free**
+- ✅ **Good coverage for universities worldwide**
 
-### Without Maps:
-- ✅ University search works perfectly
-- ✅ Country selection works perfectly
-- ✅ Favorites system works perfectly
-- ✅ All core functionality is available
-- Map area shows a helpful message explaining the search still works
+The app automatically fetches university coordinates using OpenStreetMap's free geocoding service.
 
-**Note**: Maps are a bonus feature. The entire application functions perfectly without Google Maps billing.
+## Interactive Maps with Google Maps
+
+**✅ Google Maps is now integrated with the latest AdvancedMarkerElement API!**
+
+- ✅ **No more deprecation warnings** - Uses the latest Google Maps API
+- ✅ **Beautiful interactive maps** - Click universities to see locations
+- ✅ **Advanced markers** - Modern pin elements with custom styling
+- ✅ **Responsive design** - Works perfectly on all devices
+- ✅ **Graceful fallbacks** - App works even if maps fail to load
+
+### Maps Features:
+
+- **University markers** with custom pins and info windows
+- **Click-to-locate** - Click any university card to center the map
+- **Auto-fitting** - Map automatically adjusts to show all universities
+- **Search integration** - Individual university search when needed
+
+### Free Geocoding:
+
+- **OpenStreetMap Nominatim** provides accurate coordinates
+- **No API keys required** for geocoding
+- **Worldwide coverage** for university locations
+
+**The app combines the best of both worlds: Free geocoding + Premium interactive maps!**
 
 ## Features
 
 - **Google Authentication**: Sign in with Google OAuth
 - **University Search**: Search universities by country and name
-- **Interactive Maps**: Click universities to see their locations
+- **Country Selection**: Browse universities from 9 countries
+- **Interactive Maps**: Click universities to see locations on Google Maps
+- **Advanced Markers**: Modern pin elements with info windows
 - **Favorites System**: Save universities for later
 - **Responsive Design**: Works on all devices
+- **Free Geocoding**: OpenStreetMap Nominatim (no API keys needed)
 
 ## Running the Application
 
