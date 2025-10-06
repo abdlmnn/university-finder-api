@@ -1,6 +1,7 @@
 import os
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from .models import University, FavoriteUniversity
 from decouple import config
 
@@ -79,6 +80,17 @@ def home_view(request):
 
 @login_required
 def favorites_view(request):
+    if request.method == 'POST':
+        favorite_id = request.POST.get('favorite_id')
+        if favorite_id:
+            try:
+                favorite = FavoriteUniversity.objects.get(id=favorite_id, user=request.user)
+                favorite.delete()
+                messages.success(request, f'Removed {favorite.university.name} from favorites.')
+            except FavoriteUniversity.DoesNotExist:
+                messages.error(request, 'Favorite not found.')
+        return redirect('favorites')
+
     favorites = FavoriteUniversity.objects.filter(user=request.user).select_related('university')
     context = {
         'favorites': favorites,

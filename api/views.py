@@ -158,65 +158,26 @@ class UniversityLocationsView(APIView):
     def get(self, request):
         country = request.query_params.get('country', 'Philippines')
 
-        # Get universities from database
-        universities = University.objects.filter(country__iexact=country)
+        # Get universities from database that have coordinates
+        universities = University.objects.filter(
+            country__iexact=country,
+            lat__isnull=False,
+            lng__isnull=False
+        )[:50]  # Limit to 50 universities with coordinates
 
         locations = []
-        for uni in universities[:20]:  # Limit to 20 for performance
-            # Try to get coordinates from OpenStreetMap Nominatim (free)
-            url = "https://nominatim.openstreetmap.org/search"
-            params = {
-                "q": f"{uni.name} {uni.country}",
-                "format": "json",
-                "limit": 1,
-                "addressdetails": 1
+        for uni in universities:
+            # Use stored coordinates (prioritize database over API calls)
+            location_data = {
+                "id": uni.id,
+                "name": uni.name,
+                "country": uni.country,
+                "lat": uni.lat,
+                "lng": uni.lng,
+                "address": f"{uni.name}, {uni.country}",
+                "place_id": ""
             }
-
-            try:
-                response = requests.get(url, params=params, headers={
-                    'User-Agent': 'UniversityFinder/1.0'  # Required by Nominatim
-                }, timeout=5)
-                response.raise_for_status()
-                data = response.json()
-
-                if data and len(data) > 0:
-                    result = data[0]
-                    location_data = {
-                        "id": uni.id,
-                        "name": uni.name,
-                        "country": uni.country,
-                        "lat": float(result.get("lat")),
-                        "lng": float(result.get("lon")),
-                        "address": result.get("display_name", f"{uni.name}, {uni.country}"),
-                        "place_id": result.get("place_id", "")
-                    }
-                    locations.append(location_data)
-                else:
-                    # Use stored coordinates if available, or skip
-                    if uni.lat and uni.lng:
-                        locations.append({
-                            "id": uni.id,
-                            "name": uni.name,
-                            "country": uni.country,
-                            "lat": uni.lat,
-                            "lng": uni.lng,
-                            "address": f"{uni.name}, {uni.country}",
-                            "place_id": ""
-                        })
-
-            except requests.RequestException:
-                # Use stored coordinates if API fails
-                if uni.lat and uni.lng:
-                    locations.append({
-                        "id": uni.id,
-                        "name": uni.name,
-                        "country": uni.country,
-                        "lat": uni.lat,
-                        "lng": uni.lng,
-                        "address": f"{uni.name}, {uni.country}",
-                        "place_id": ""
-                    })
-                continue
+            locations.append(location_data)
 
         return Response(locations)
 

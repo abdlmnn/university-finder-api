@@ -41,6 +41,31 @@
         margin-bottom: 30px;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         text-align: center;
+        position: relative;
+      }
+
+      .map-reload-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .map-reload-btn:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
       }
 
       .header-title {
@@ -187,6 +212,50 @@
 
       .university-country i {
         color: #667eea;
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+      }
+
+      .locate-btn {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .locate-btn:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+      }
+
+      .locate-btn i {
+        font-size: 0.8rem;
+      }
+      
+      .locate-btn-disabled {
+        background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      
+      .locate-btn-disabled:hover {
+        background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+        transform: none;
+        box-shadow: none;
       }
 
       .favorite-btn {
@@ -353,6 +422,10 @@
     <div class="main-container" style="padding-top: 100px;">
       <!-- Header Section -->
       <div class="header-section">
+        <button type="button" class="map-reload-btn" onclick="reloadMap()">
+          <i class="fas fa-sync-alt"></i>Reload Map
+        </button>
+
         <h1 class="header-title">Universities in {{ selected_country|default:"Philippines" }}</h1>
         <p class="header-subtitle">Discover universities from around the world</p>
 
@@ -412,7 +485,7 @@
           {% if universities %}
           <div class="universities-grid">
             {% for uni in universities %}
-            <div class="university-card" onclick="showUniversityLocation({{ uni.id }}, '{{ uni.name }}', '{{ uni.country }}')">
+            <div class="university-card">
               <h3 class="university-name">{{ uni.name }}</h3>
               <div class="university-country">
                 <i class="fas fa-map-marker-alt"></i>
@@ -420,13 +493,18 @@
               </div>
 
               {% if user.is_authenticated %}
-              <form method="post" action="{% url 'favorites' %}" onclick="event.stopPropagation()">
-                {% csrf_token %}
-                <input type="hidden" name="university_id" value="{{ uni.id }}">
-                <button type="submit" class="favorite-btn">
-                  <i class="fas fa-heart"></i>Add to Favorites
+              <div class="card-actions">
+                <button type="button" class="locate-btn{% if not uni.lat or not uni.lng %} locate-btn-disabled{% endif %}" onclick="showUniversityLocation({{ uni.id }}, '{{ uni.name }}', '{{ uni.country }}')"{% if not uni.lat or not uni.lng %} disabled title="Location data not available yet"{% endif %}>
+                  <i class="fas fa-map-marker-alt"></i>{% if uni.lat and uni.lng %}Locate{% else %}No Location{% endif %}
                 </button>
-              </form>
+                <form method="post" action="{% url 'favorites' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="university_id" value="{{ uni.id }}">
+                  <button type="submit" class="favorite-btn">
+                    <i class="fas fa-heart"></i>Add to Favorites
+                  </button>
+                </form>
+              </div>
               {% endif %}
             </div>
             {% endfor %}
@@ -507,7 +585,7 @@ function showMapError(message) {
                     <p style="margin: 0 0 15px 0; font-size: 14px; line-height: 1.5;">${message}</p>
                     <div style="background: rgba(102, 126, 234, 0.1); padding: 10px; border-radius: 8px; border-left: 3px solid #667eea;">
                         <p style="margin: 0; font-size: 13px; color: #4a5568;">
-                            <strong>✅ University search still works perfectly!</strong><br>
+                            <strong>University search still works perfectly!</strong><br>
                             Browse and favorite universities above.
                         </p>
                     </div>
@@ -600,107 +678,108 @@ async function initMap() {
 }
 
 function showUniversityLocation(universityId, name, country) {
-    console.log('Showing location for:', name, 'ID:', universityId);
-
     // Find the university location in our cache
     const location = universityLocations.find(loc => loc.id === universityId);
 
-    if (location) {
-        console.log('Found location in cache:', location);
+    if (location && location.lat && location.lng) {
         // Center map on the university
         map.setCenter({ lat: location.lat, lng: location.lng });
         map.setZoom(15);
 
-        // Find and click the corresponding marker
-        const marker = markers.find(m => m.title === name);
-        if (marker) {
-            console.log('Found marker, triggering click');
-            google.maps.event.trigger(marker, 'click');
-        } else {
-            console.log('Marker not found for:', name);
-        }
+        // Always create a marker for this university location
+        createTemporaryMarker(location);
     } else {
-        console.log('Location not found in cache, searching for:', name, country);
-        // If location not found, try to search for it
-        searchForUniversity(name, country);
+        // Location not available - show user-friendly message
+        showMapError(`📍 Location data for "${name}" is not available yet. We're working on mapping all universities!`);
     }
 }
 
-async function searchForUniversity(name, country) {
-    try {
-        const response = await fetch(`/api/search-university/?name=${encodeURIComponent(name + ' ' + country)}`);
-        const data = await response.json();
+function createTemporaryMarker(location) {
+    let marker;
 
-        if (data.lat && data.lng) {
-            map.setCenter({ lat: data.lat, lng: data.lng });
-            map.setZoom(15);
-
-            let marker;
-
-            if (mapId) {
-                // Use AdvancedMarkerElement when Map ID is available
-                marker = new google.maps.marker.AdvancedMarkerElement({
-                    map: map,
-                    position: { lat: data.lat, lng: data.lng },
-                    title: name,
-                    content: new google.maps.marker.PinElement({
-                        background: '#667eea',
-                        borderColor: '#ffffff',
-                        glyphColor: '#ffffff',
-                    }).element
-                });
-            } else {
-                // Use regular Marker when no Map ID
-                marker = new google.maps.Marker({
-                    position: { lat: data.lat, lng: data.lng },
-                    map: map,
-                    title: name,
-                    icon: {
-                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                            <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="20" cy="20" r="18" fill="#667eea" stroke="white" stroke-width="3"/>
-                                <text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">🎓</text>
-                            </svg>
-                        `),
-                        scaledSize: new google.maps.Size(40, 40),
-                        anchor: new google.maps.Point(20, 40)
-                    }
-                });
+    if (mapId) {
+        // Use AdvancedMarkerElement when Map ID is available
+        marker = new google.maps.marker.AdvancedMarkerElement({
+            map: map,
+            position: { lat: location.lat, lng: location.lng },
+            title: location.name,
+            content: new google.maps.marker.PinElement({
+                background: '#667eea',
+                borderColor: '#ffffff',
+                glyphColor: '#ffffff',
+            }).element
+        });
+    } else {
+        // Use regular Marker when no Map ID
+        marker = new google.maps.Marker({
+            position: { lat: location.lat, lng: location.lng },
+            map: map,
+            title: location.name,
+            icon: {
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                    <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="20" cy="20" r="18" fill="#667eea" stroke="white" stroke-width="3"/>
+                        <text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">🎓</text>
+                    </svg>
+                `),
+                scaledSize: new google.maps.Size(40, 40),
+                anchor: new google.maps.Point(20, 40)
             }
+        });
+    }
 
-            // Add info window
-            const infoWindow = new google.maps.InfoWindow({
-                content: `
-                    <div style="max-width: 200px;">
-                        <h5 style="margin: 0 0 8px 0; color: #4a5568;">${name}</h5>
-                        <p style="margin: 0; color: #718096; font-size: 14px;">
-                            <i class="fas fa-map-marker-alt" style="margin-right: 5px;"></i>
-                            ${data.address || `${name}, ${country}`}
-                        </p>
-                    </div>
-                `
-            });
+    // Add info window
+    const infoWindow = new google.maps.InfoWindow({
+        content: `
+            <div style="max-width: 200px;">
+                <h5 style="margin: 0 0 8px 0; color: #4a5568;">${location.name}</h5>
+                <p style="margin: 0; color: #718096; font-size: 14px;">
+                    <i class="fas fa-map-marker-alt" style="margin-right: 5px;"></i>
+                    ${location.address || `${location.name}, ${location.country}`}
+                </p>
+            </div>
+        `
+    });
 
-            marker.addListener('click', () => {
-                infoWindow.open(map, marker);
-            });
+    marker.addListener('click', () => {
+        infoWindow.open(map, marker);
+    });
 
-            // Store temporary marker for cleanup
-            markers.push(marker);
-        }
-    } catch (error) {
-        console.error('Error searching for university:', error);
-        showMapError('Unable to locate this university on the map.');
+    // Auto-open the info window
+    infoWindow.open(map, marker);
+
+    // Store temporary marker for cleanup (optional)
+    markers.push(marker);
+}
+
+function reloadMap() {
+    // Clear existing markers
+    markers.forEach(marker => {
+        marker.setMap(null);
+    });
+    markers = [];
+
+    // Reload university locations
+    loadUniversityLocations();
+
+    // Reset map view to default
+    if (universityLocations.length > 0) {
+        const bounds = new google.maps.LatLngBounds();
+        universityLocations.forEach(location => {
+            if (location.lat && location.lng) {
+                bounds.extend({ lat: location.lat, lng: location.lng });
+            }
+        });
+        map.fitBounds(bounds);
     }
 }
+
 
 async function loadUniversityLocations() {
     const selectedCountry = '{{ selected_country }}';
-    console.log('Loading university locations for country:', selectedCountry);
 
     try {
         const response = await fetch(`/api/university-locations/?country=${selectedCountry}`);
-        console.log('API response status:', response.status);
 
         const locations = await response.json();
 
@@ -779,9 +858,7 @@ async function loadUniversityLocations() {
             });
         }
     } catch (error) {
-        console.error('Error loading university locations:', error);
-        console.log('This is likely due to Google Maps API blocking or network issues');
-        console.log('University cards will still work by searching individually when clicked');
+        showMapError('Failed to load university locations. Please try again later.');
 
         // Clear the locations array so clicks will use searchForUniversity
         universityLocations = [];

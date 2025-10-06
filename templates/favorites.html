@@ -216,7 +216,8 @@
                 {{ fav.university.country }}
               </div>
             </div>
-            <form method="post" action="{% url 'remove_favorite' fav.id %}">
+            <form method="post" action="{% url 'favorites' %}">
+              <input type="hidden" name="favorite_id" value="{{ fav.id }}" />
               {% csrf_token %}
               <button type="submit" class="remove-btn">
                 <i class="fas fa-trash-alt" style="margin-right: 8px"></i>
