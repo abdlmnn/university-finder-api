@@ -1,4 +1,4 @@
-{% load allauth socialaccount allauth.account %} {% get_providers as
+{% load allauth socialaccount account %} {% get_providers as
 socialaccount_providers %} {% if socialaccount_providers %} {% element
 provider_list %} {% for provider in socialaccount_providers %} {% if provider.id
 == "openid" %} {% for brand in provider.get_brands %} {% provider_login_url
