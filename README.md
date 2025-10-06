@@ -26,6 +26,32 @@ To enable Google authentication, follow these steps:
 
 11. Run the Django server and visit `/accounts/google/login/` to test Google authentication
 
+## Google Maps Setup (Optional)
+
+The application includes optional Google Maps integration for university locations. The university search and all other features work perfectly without maps.
+
+### To Enable Maps (Optional):
+1. **Enable Billing**: Google Maps requires billing to be enabled on your Google Cloud project
+2. **Enable APIs**: Make sure both "Maps JavaScript API" and "Places API" are enabled
+3. **API Key**: The same `GOOGLE_API_KEY` from your `.env` file is used for maps
+
+### Without Maps:
+- ✅ University search works perfectly
+- ✅ Country selection works perfectly
+- ✅ Favorites system works perfectly
+- ✅ All core functionality is available
+- Map area shows a helpful message explaining the search still works
+
+**Note**: Maps are a bonus feature. The entire application functions perfectly without Google Maps billing.
+
+## Features
+
+- **Google Authentication**: Sign in with Google OAuth
+- **University Search**: Search universities by country and name
+- **Interactive Maps**: Click universities to see their locations
+- **Favorites System**: Save universities for later
+- **Responsive Design**: Works on all devices
+
 ## Running the Application
 
 1. Install dependencies: `pip install -r requirements.txt`

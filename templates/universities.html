@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Content Security Policy removed to avoid conflicts -->
+    <title>University Finder - {{ selected_country|default:"Philippines" }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <script>
+      // Global variables
+      let map;
+      let markers = [];
+      let universityLocations = [];
+
+      // Global callback for Google Maps
+      window.initGoogleMaps = function() {
+        console.log('Google Maps API fully loaded and ready');
+
+        // Ensure DOM is ready before initializing map
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+          });
+        } else {
+          // DOM is already ready
+          initMap();
+        }
+      };
+
+      // Load Google Maps API asynchronously
+      (function() {
+        console.log('Loading Google Maps API...');
+        console.log('API Key available:', '{{ google_api_key|length }}' > 0 ? 'Yes' : 'No');
+
+        const script = document.createElement('script');
+        script.src = 'https://maps.googleapis.com/maps/api/js?key={{ google_api_key }}&libraries=places&callback=initGoogleMaps';
+        script.async = true;
+        script.defer = true;
+
+        script.onerror = function() {
+          console.error('Failed to load Google Maps API');
+          showMapError('Failed to load Google Maps. Please check your internet connection.');
+        };
+
+        document.head.appendChild(script);
+      })();
+
+      // Show map error function (defined early for availability)
+      function showMapError(message) {
+        const mapContainer = document.getElementById('map');
+        if (mapContainer) {
+          mapContainer.innerHTML = `
+              <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: rgba(255,255,255,0.9); border-radius: 15px; padding: 20px;">
+                  <div style="text-align: center; color: #718096; max-width: 300px;">
+                      <i class="fas fa-map-marked-alt" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5; color: #667eea;"></i>
+                      <h4 style="margin: 0 0 10px 0; color: #4a5568;">Interactive Map Unavailable</h4>
+                      <p style="margin: 0 0 15px 0; font-size: 14px; line-height: 1.5;">${message}</p>
+                      <div style="background: rgba(102, 126, 234, 0.1); padding: 10px; border-radius: 8px; border-left: 3px solid #667eea;">
+                          <p style="margin: 0; font-size: 13px; color: #4a5568;">
+                              <strong>✅ University search still works perfectly!</strong><br>
+                              Browse and favorite universities above.
+                          </p>
+                      </div>
+                  </div>
+              </div>
+          `;
+        }
+      }
+
+      // Initialize map function
+      async function initMap() {
+        try {
+          console.log('Initializing Google Maps...');
+
+          // Check if map div exists
+          const mapDiv = document.getElementById('map');
+          if (!mapDiv) {
+            console.error('Map div not found in DOM');
+            showMapError('Map container not found. Please refresh the page.');
+            return;
+          }
+
+          // Default center (will be updated when locations are loaded)
+          const defaultCenter = { lat: 14.5995, lng: 120.9842 }; // Manila, Philippines
+
+          map = new google.maps.Map(mapDiv, {
+              zoom: 6,
+              center: defaultCenter,
+              styles: [
+                  {
+                      featureType: 'water',
+                      elementType: 'geometry',
+                      stylers: [{ color: '#e9e9e9' }, { lightness: 17 }]
+                  },
+                  {
+                      featureType: 'landscape',
+                      elementType: 'geometry',
+                      stylers: [{ color: '#f5f5f5' }, { lightness: 20 }]
+                  },
+                  {
+                      featureType: 'road.highway',
+                      elementType: 'geometry.fill',
+                      stylers: [{ color: '#ffffff' }, { lightness: 17 }]
+                  },
+                  {
+                      featureType: 'road.highway',
+                      elementType: 'geometry.stroke',
+                      stylers: [{ color: '#ffffff' }, { lightness: 29 }, { weight: 0.2 }]
+                  },
+                  {
+                      featureType: 'road.arterial',
+                      elementType: 'geometry',
+                      stylers: [{ color: '#ffffff' }, { lightness: 18 }]
+                  },
+                  {
+                      featureType: 'road.local',
+                      elementType: 'geometry',
+                      stylers: [{ color: '#ffffff' }, { lightness: 16 }]
+                  },
+                  {
+                      featureType: 'poi',
+                      elementType: 'geometry',
+                      stylers: [{ color: '#f5f5f5' }, { lightness: 21 }]
+                  },
+                  {
+                      featureType: 'poi.park',
+                      elementType: 'geometry',
+                      stylers: [{ color: '#dedede' }, { lightness: 21 }]
+                  }
+              ]
+          });
+
+          console.log('Google Maps initialized successfully, loading university locations...');
+
+          // Load university locations
+          await loadUniversityLocations();
+
+        } catch (error) {
+          console.error('Error initializing map:', error);
+          if (error.message.includes('BillingNotEnabled') || error.message.includes('not loaded')) {
+              showMapError('Google Maps is currently unavailable. Please check your billing setup or try again later.');
+          } else {
+              showMapError('Failed to load the map. Please try refreshing the page.');
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+      }
+
+      .main-container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .header-section {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      .header-title {
+        color: #4a5568;
+        font-weight: 700;
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+      }
+
+      .header-subtitle {
+        color: #718096;
+        font-size: 1.1rem;
+        margin-bottom: 30px;
+      }
+
+      .country-selector {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+
+      .search-form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .form-row {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .search-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
+      .search-input {
+        padding: 12px 45px 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.9);
+        font-size: 16px;
+        font-weight: 500;
+        color: #4a5568;
+        min-width: 250px;
+        outline: none;
+        transition: all 0.3s ease;
+      }
+
+      .search-input:focus {
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .search-input::placeholder {
+        color: #a0aec0;
+      }
+
+      .search-btn {
+        position: absolute;
+        right: 8px;
+        background: #667eea;
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+      }
+
+      .search-btn:hover {
+        background: #5a67d8;
+        transform: translateY(-1px);
+      }
+
+      .country-select {
+        padding: 12px 20px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.9);
+        font-size: 16px;
+        font-weight: 500;
+        color: #4a5568;
+        min-width: 200px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        outline: none;
+      }
+
+      .country-select:focus {
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .universities-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+        margin-top: 30px;
+      }
+
+      .university-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .university-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      }
+
+      .university-name {
+        color: #2d3748;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        line-height: 1.4;
+      }
+
+      .university-country {
+        color: #718096;
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .university-country i {
+        color: #667eea;
+      }
+
+      .favorite-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 600;
+        color: white;
+        width: 100%;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        font-size: 0.95rem;
+      }
+
+      .favorite-btn:hover {
+        background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .favorite-btn i {
+        margin-right: 8px;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #718096;
+      }
+
+      .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+      }
+
+      .empty-state h3 {
+        color: #4a5568;
+        margin-bottom: 10px;
+      }
+
+      .loading-container {
+        text-align: center;
+        padding: 60px 20px;
+      }
+
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #e2e8f0;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .error-message {
+        background: rgba(254, 202, 202, 0.9);
+        border: 1px solid #fc8181;
+        color: #c53030;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      .content-layout {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 30px;
+        margin-top: 30px;
+      }
+
+      .universities-section {
+        flex: 1;
+      }
+
+      .map-section {
+        position: sticky;
+        top: 120px;
+        height: fit-content;
+      }
+
+      .map-header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .map-header h3 {
+        color: #4a5568;
+        margin-bottom: 8px;
+        font-size: 1.2rem;
+      }
+
+      .map-header p {
+        color: #718096;
+        font-size: 0.9rem;
+        margin: 0;
+      }
+
+      .map-container {
+        height: 500px;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .university-card:hover {
+        cursor: pointer;
+        transform: translateY(-3px);
+      }
+
+      @media (max-width: 768px) {
+        .universities-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .header-title {
+          font-size: 2rem;
+        }
+
+        .country-selector {
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .form-row {
+          flex-direction: column;
+          width: 100%;
+        }
+
+        .country-select {
+          min-width: 100%;
+        }
+
+        .search-input {
+          min-width: 100%;
+        }
+
+        .search-container {
+          width: 100%;
+        }
+
+        .content-layout {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        .map-section {
+          position: static;
+          order: -1;
+        }
+
+        .map-container {
+          height: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    {% include 'navbar.html' %}
+
+    <div class="main-container" style="padding-top: 100px;">
+      <!-- Header Section -->
+      <div class="header-section">
+        <h1 class="header-title">Universities in {{ selected_country|default:"Philippines" }}</h1>
+        <p class="header-subtitle">Discover universities from around the world</p>
+
+        <!-- Country Selector and Search -->
+        <div class="country-selector">
+          <form method="get" action="" class="search-form">
+            <div class="form-row">
+              <select
+                name="country"
+                id="country"
+                class="country-select"
+                onchange="this.form.submit()"
+              >
+                {% for c in countries %}
+                  <option value="{{ c }}" {% if c == selected_country %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+              </select>
+
+              <div class="search-container">
+                <input
+                  type="text"
+                  name="search"
+                  id="search"
+                  class="search-input"
+                  placeholder="Search universities..."
+                  value="{{ search_query }}"
+                >
+                <button type="submit" class="search-btn">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      {% if error %}
+      <div class="error-message">
+        <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+      </div>
+      {% endif %}
+
+      <!-- Loading State -->
+      {% if loading %}
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <h3>Loading universities...</h3>
+        <p>Please wait while we fetch the data</p>
+      </div>
+      {% endif %}
+
+      <!-- Main Content Layout -->
+      <div class="content-layout">
+        <!-- Universities List -->
+        <div class="universities-section">
+          {% if universities %}
+          <div class="universities-grid">
+            {% for uni in universities %}
+            <div class="university-card" onclick="showUniversityLocation({{ uni.id }}, '{{ uni.name }}', '{{ uni.country }}')">
+              <h3 class="university-name">{{ uni.name }}</h3>
+              <div class="university-country">
+                <i class="fas fa-map-marker-alt"></i>
+                {{ uni.country }}
+              </div>
+
+              {% if user.is_authenticated %}
+              <form method="post" action="{% url 'favorites' %}" onclick="event.stopPropagation()">
+                {% csrf_token %}
+                <input type="hidden" name="university_id" value="{{ uni.id }}">
+                <button type="submit" class="favorite-btn">
+                  <i class="fas fa-heart"></i>Add to Favorites
+                </button>
+              </form>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+            {% if not loading %}
+            <div class="empty-state">
+              <i class="fas fa-university"></i>
+              <h3>No universities found</h3>
+              <p>Try selecting a different country or check back later.</p>
+            </div>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        <!-- Google Maps Section -->
+        <div class="map-section">
+          <div class="map-header">
+            <h3><i class="fas fa-map-marked-alt"></i> University Locations</h3>
+            <p>Click on any university to see its location on the map</p>
+          </div>
+          <div id="map" class="map-container"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+
+<script>
+
+
+function showUniversityLocation(universityId, name, country) {
+    console.log('Showing location for:', name, 'ID:', universityId);
+
+    // Find the university location
+    const location = universityLocations.find(loc => loc.id === universityId);
+
+    if (location) {
+        console.log('Found location in cache:', location);
+        // Center map on the university
+        map.setCenter({ lat: location.lat, lng: location.lng });
+        map.setZoom(15);
+
+        // Find and click the corresponding marker
+        const marker = markers.find(m => m.getTitle() === name);
+        if (marker) {
+            google.maps.event.trigger(marker, 'click');
+        }
+    } else {
+        console.log('Location not found in cache, searching for:', name, country);
+        // If location not found, try to search for it
+        searchForUniversity(name, country);
+    }
+}
+
+async function searchForUniversity(name, country) {
+    try {
+        const response = await fetch(`/api/search-university/?name=${encodeURIComponent(name + ' ' + country)}`);
+        const data = await response.json();
+
+        if (data.lat && data.lng) {
+            map.setCenter({ lat: data.lat, lng: data.lng });
+            map.setZoom(15);
+
+            // Add a temporary marker
+            new google.maps.Marker({
+                position: { lat: data.lat, lng: data.lng },
+                map: map,
+                title: name,
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#667eea" stroke="white" stroke-width="3"/>
+                            <text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">🎓</text>
+                        </svg>
+                    `),
+                    scaledSize: new google.maps.Size(40, 40),
+                    anchor: new google.maps.Point(20, 40)
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error searching for university:', error);
+        showMapError('Unable to locate this university on the map.');
+    }
+}
+
+async function loadUniversityLocations() {
+    const selectedCountry = '{{ selected_country }}';
+    console.log('Loading university locations for country:', selectedCountry);
+
+    try {
+        const response = await fetch(`/api/university-locations/?country=${selectedCountry}`);
+        console.log('API response status:', response.status);
+
+        const locations = await response.json();
+        console.log('Received locations:', locations.length, 'universities');
+
+        // Clear existing markers
+        markers.forEach(marker => marker.setMap(null));
+        markers = [];
+        universityLocations = locations;
+
+        if (locations.length > 0) {
+            // Create bounds to fit all markers
+            const bounds = new google.maps.LatLngBounds();
+
+            locations.forEach(location => {
+                const marker = new google.maps.Marker({
+                    position: { lat: location.lat, lng: location.lng },
+                    map: map,
+                    title: location.name,
+                    icon: {
+                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                            <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="20" cy="20" r="18" fill="#667eea" stroke="white" stroke-width="3"/>
+                                <text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">🎓</text>
+                            </svg>
+                        `),
+                        scaledSize: new google.maps.Size(40, 40),
+                        anchor: new google.maps.Point(20, 40)
+                    }
+                });
+
+                // Add info window
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `
+                        <div style="max-width: 200px;">
+                            <h5 style="margin: 0 0 8px 0; color: #4a5568;">${location.name}</h5>
+                            <p style="margin: 0; color: #718096; font-size: 14px;">
+                                <i class="fas fa-map-marker-alt" style="margin-right: 5px;"></i>
+                                ${location.address || `${location.name}, ${location.country}`}
+                            </p>
+                        </div>
+                    `
+                });
+
+                marker.addListener('click', () => {
+                    infoWindow.open(map, marker);
+                });
+
+                markers.push(marker);
+                bounds.extend(marker.getPosition());
+            });
+
+            // Fit map to show all markers
+            map.fitBounds(bounds);
+
+            // Don't zoom in too much for single locations
+            google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
+                if (map.getZoom() > 15) {
+                    map.setZoom(15);
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error loading university locations:', error);
+        console.log('This is likely due to Google Maps API blocking or network issues');
+        console.log('University cards will still work by searching individually when clicked');
+
+        // Clear the locations array so clicks will use searchForUniversity
+        universityLocations = [];
+
+        // Show error message in map area
+        showMapError('Failed to load university locations. Click on university cards to search for their locations individually.');
+    }
+}
+
+// Initialize map when page loads - Google Maps will call initGoogleMaps when ready
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Page loaded, waiting for Google Maps API...');
+
+  // Set a timeout in case Google Maps fails to load
+  setTimeout(function() {
+    if (typeof google === 'undefined' || !google.maps) {
+      console.error('Google Maps failed to load within timeout');
+      showMapError('Google Maps could not be loaded. Please check your internet connection and try again.');
+    }
+  }, 15000); // 15 second timeout (increased)
+});
+
+// Reload locations when country changes
+document.getElementById('country').addEventListener('change', function() {
+    // The form will submit automatically, but we can also reload locations
+    setTimeout(loadUniversityLocations, 500);
+});
+</script>

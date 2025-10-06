@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from .models import University, FavoriteUniversity
+from decouple import config
 
 @login_required
 def home_view(request):
@@ -18,6 +19,7 @@ def home_view(request):
     ]
 
     selected_country = request.GET.get('country', 'Philippines')  # Default to Philippines
+    search_query = request.GET.get('search', '').strip()
     universities = []
     loading = False
     error = None
@@ -32,8 +34,11 @@ def home_view(request):
                     user=request.user,
                     university=university
                 )
-                # Redirect back to the same page with the current country selection
-                return redirect(f"{request.path}?country={selected_country}")
+                # Redirect back to the same page with the current country selection and search
+                redirect_url = f"{request.path}?country={selected_country}"
+                if search_query:
+                    redirect_url += f"&search={search_query}"
+                return redirect(redirect_url)
             except University.DoesNotExist:
                 error = "University not found."
             except Exception as e:
@@ -41,20 +46,33 @@ def home_view(request):
 
     # Always load universities for the selected country (defaulting to Philippines)
     try:
-        # Filter universities by selected country
-        universities = University.objects.filter(country=selected_country).order_by('name')
+        # Start with country filter
+        queryset = University.objects.filter(country=selected_country)
+
+        # Apply search filter if search query exists
+        if search_query:
+            queryset = queryset.filter(name__icontains=search_query)
+
+        # Order by name
+        universities = queryset.order_by('name')
     except Exception as e:
         error = f"Error loading universities: {str(e)}"
 
     context = {
         'countries': available_countries,
         'selected_country': selected_country,
+        'search_query': search_query,
         'universities': universities,
         'loading': loading,
         'error': error,
+        'google_api_key': config('GOOGLE_API_KEY'),
     }
 
-    return render(request, "home.html", context)
+    # Use different templates based on the URL
+    if request.path == '/universities/':
+        return render(request, "universities.html", context)
+    else:
+        return render(request, "home.html", context)
 
 
 @login_required

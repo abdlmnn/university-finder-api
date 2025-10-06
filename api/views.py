@@ -105,7 +105,77 @@ class UniversitySearchView(APIView):
 
 
 # --------------------------
-# 3. Favorite universities
+# 3. Get university locations for map display
+# --------------------------
+class UniversityLocationsView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        country = request.query_params.get('country', 'Philippines')
+
+        # Get universities from database
+        universities = University.objects.filter(country__iexact=country)
+
+        locations = []
+        for uni in universities[:20]:  # Limit to 20 for performance
+            # Try to get coordinates from Places API
+            url = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
+            params = {
+                "input": f"{uni.name} {uni.country}",
+                "inputtype": "textquery",
+                "fields": "geometry,name,formatted_address,place_id",
+                "key": GOOGLE_API_KEY
+            }
+
+            try:
+                response = requests.get(url, params=params, timeout=5)
+                response.raise_for_status()
+                data = response.json()
+
+                if 'candidates' in data and len(data['candidates']) > 0:
+                    candidate = data['candidates'][0]
+                    location_data = {
+                        "id": uni.id,
+                        "name": uni.name,
+                        "country": uni.country,
+                        "lat": candidate['geometry']['location']['lat'],
+                        "lng": candidate['geometry']['location']['lng'],
+                        "address": candidate.get('formatted_address', ''),
+                        "place_id": candidate.get('place_id', '')
+                    }
+                    locations.append(location_data)
+                else:
+                    # Use stored coordinates if available, or skip
+                    if uni.lat and uni.lng:
+                        locations.append({
+                            "id": uni.id,
+                            "name": uni.name,
+                            "country": uni.country,
+                            "lat": uni.lat,
+                            "lng": uni.lng,
+                            "address": f"{uni.name}, {uni.country}",
+                            "place_id": ""
+                        })
+
+            except requests.RequestException:
+                # Use stored coordinates if API fails
+                if uni.lat and uni.lng:
+                    locations.append({
+                        "id": uni.id,
+                        "name": uni.name,
+                        "country": uni.country,
+                        "lat": uni.lat,
+                        "lng": uni.lng,
+                        "address": f"{uni.name}, {uni.country}",
+                        "place_id": ""
+                    })
+                continue
+
+        return Response(locations)
+
+
+# --------------------------
+# 4. Favorite universities
 # --------------------------
 class FavoriteUniversityListCreateView(generics.ListCreateAPIView):
     serializer_class = FavoriteUniversitySerializer
