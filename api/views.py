@@ -102,6 +102,13 @@ class FavoriteUniversityListCreateView(generics.ListCreateAPIView):
         return FavoriteUniversity.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        university_id = self.request.data.get('university_id')
-        if university_id:
-            serializer.save(user=self.request.user, university_id=university_id)
+        university_data = self.request.data.get("university")
+        if not university_data:
+            raise ValueError("Missing 'university' data")
+
+        # Save or get university
+        uni_obj, created = University.objects.get_or_create(
+            name=university_data.get("name"),
+            country=university_data.get("country", "")
+        )
+        serializer.save(user=self.request.user, university=uni_obj)
