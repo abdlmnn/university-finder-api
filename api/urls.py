@@ -7,5 +7,4 @@ urlpatterns = [
     path('search-university/', UniversitySearchView.as_view(), name='university-search'),
     path('favorites/', FavoriteUniversityListCreateView.as_view(), name='favorites'),
     path("user/", CurrentUserView.as_view(), name="current-user"),
-
 ]

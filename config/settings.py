@@ -43,19 +43,46 @@ ALLOWED_HOSTS = ["university-finder-api.onrender.com", "127.0.0.1", "localhost"]
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
-        'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'online'},
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+            'prompt': 'select_account',
+        },
         'OAUTH_PKCE_ENABLED': True,
         'APP': {
             'client_id': GOOGLE_CLIENT_ID,
             'secret': GOOGLE_CLIENT_SECRET,
-            'key': ''
-        }
+            'key': '',
+        },
+        # Specify the callback URL
+        'CALLBACK_URL': 'accounts/google/login/callback/',
     }
 }
 
+# Social Auth settings
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http'  # Use HTTP for development callback URLs
+SITE_ID = 2  # Make sure this matches your site in the database
+SOCIALACCOUNT_ADAPTER = 'config.adapters.CustomSocialAccountAdapter'
+
+# Additional Social Auth Settings
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_EMAIL_REQUIRED = False
+SOCIALACCOUNT_QUERY_EMAIL = True
+SOCIALACCOUNT_STORE_TOKENS = True
+
 LOGIN_REDIRECT_URL = "/"
+LOGIN_URL = "/accounts/login/"
 LOGOUT_REDIRECT_URL = "/"
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_LOGOUT_ON_GET = True
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# Email settings (for development - no actual sending)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+SOCIALACCOUNT_AUTO_SIGNUP = True
 
 # DATABASES = {
 #     'default': {
@@ -196,7 +223,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Let Whitenoise serve compressed static files

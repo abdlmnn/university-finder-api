@@ -15,16 +15,19 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, reverse
+from django.http import HttpResponseRedirect
+from api.views_frontend import home_view, favorites_view
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls),    
 
     # API routes
     path('api/', include('api.urls')),
-    # path('api/auth/', include('dj_rest_auth.urls')), # login/logout
-    # path('api/auth/registration/', include('dj_rest_auth.registration.urls')), # registration
+    
+    path('', home_view, name='home'),
 
-    # Allauth
-    path('api/auth/', include('allauth.urls')),
+    # Social Auth and Account URLs
+    path('accounts/', include('allauth.urls')),
+    path('accounts/profile/', lambda request: HttpResponseRedirect('/')),
 ]

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - University Finder{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <h1 class="home-title">Universities in {{ selected_country|default:"Select a Country" }}</h1>
+
+    <!-- Country selector -->
+    <div class="country-selector">
+        <form method="get" action="">
+            <select
+                name="country"
+                id="country"
+                class="country-select"
+                onchange="this.form.submit()"
+            >
+                <option value="">Choose a country...</option>
+                {% for c in countries %}
+                    <option value="{{ c }}" {% if c == selected_country %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    {% if loading %}
+    <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading universities...</p>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <p style="color: red">{{ error }}</p>
+    {% endif %}
+
+    <div class="universities-list">
+        {% for uni in universities %}
+            <div class="university-card">
+                <h3>{{ uni.name }}</h3>
+                <p><strong>Country:</strong> {{ uni.country }}</p>
+                {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'favorites' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="university_id" value="{{ uni.id }}">
+                        <button type="submit" class="add-favorite-btn">Add to Favorites</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% empty %}
+            {% if not loading %}
+                <p>No universities found for this country.</p>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
