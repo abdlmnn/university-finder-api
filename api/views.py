@@ -6,8 +6,21 @@ import requests
 from decouple import config
 from .models import University, FavoriteUniversity
 from .serializers import UniversitySerializer, FavoriteUniversitySerializer
+from rest_framework.permissions import IsAuthenticated
 
 GOOGLE_API_KEY = config("GOOGLE_API_KEY")
+
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+        })
 
 
 # --------------------------
