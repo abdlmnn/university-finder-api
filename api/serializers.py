@@ -14,6 +14,24 @@ class FavoriteUniversitySerializer(serializers.ModelSerializer):
         model = FavoriteUniversity
         fields = ['id', 'user', 'university', 'added_at']
 
+        def create(self, validated_data):
+        # Extract nested university data
+        university_data = validated_data.pop('university')
+        university_obj, _ = University.objects.get_or_create(
+            name=university_data.get('name'),
+            defaults={
+                'country': university_data.get('country', ''),
+                'lat': university_data.get('lat', None),
+                'lng': university_data.get('lng', None),
+            }
+        )
+        # Create favorite
+        favorite = FavoriteUniversity.objects.create(
+            user=self.context['request'].user,
+            university=university_obj
+        )
+        return favorite
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

@@ -81,6 +81,7 @@ INSTALLED_APPS = [
 
     "corsheaders",              # CORS (React Native/frontend access)
 
+    'django.contrib.sites',  # required by allauth
     "allauth",                  # Account management
     "allauth.account",
     "allauth.socialaccount",    # Social login
@@ -92,6 +93,8 @@ INSTALLED_APPS = [
 
     'api',                      # Your app
 ]
+
+SITE_ID = 1
 
 # Allauth settings
 
@@ -117,6 +120,22 @@ MIDDLEWARE = [
     # Add this line:
     'allauth.account.middleware.AccountMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',  # default
+    'allauth.account.auth_backends.AuthenticationBackend',  # for social login
+)
+
+REST_AUTH_REGISTER_SERIALIZERS = {
+    'REGISTER_SERIALIZER': 'dj_rest_auth.registration.serializers.RegisterSerializer',
+}
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+}
 
 ROOT_URLCONF = 'config.urls'
 

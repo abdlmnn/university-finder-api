@@ -24,4 +24,7 @@ urlpatterns = [
     path('api/', include('api.urls')),
     path('api/auth/', include('dj_rest_auth.urls')), # login/logout
     path('api/auth/registration/', include('dj_rest_auth.registration.urls')), # registration
+
+    # Social login (Google)
+    path('api/auth/social/', include('allauth.socialaccount.urls')),
 ]
