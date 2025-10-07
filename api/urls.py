@@ -6,6 +6,5 @@ urlpatterns = [
     path('universities/', UniversityListView.as_view(), name='university-list'),
     path('search-university/', UniversitySearchView.as_view(), name='university-search'),
     path('university-locations/', UniversityLocationsView.as_view(), name='university-locations'),
-    path('favorites/', FavoriteUniversityListCreateView.as_view(), name='favorites'),
     path("user/", CurrentUserView.as_view(), name="current-user"),
 ]

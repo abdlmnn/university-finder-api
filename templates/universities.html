@@ -500,13 +500,6 @@
                 <button type="button" class="locate-btn{% if not uni.lat or not uni.lng %} locate-btn-disabled{% endif %}" onclick="showUniversityLocation({{ uni.id }}, '{{ uni.name }}', '{{ uni.country }}')"{% if not uni.lat or not uni.lng %} disabled title="Location data not available yet"{% endif %}>
                   <i class="fas fa-map-marker-alt"></i>{% if uni.lat and uni.lng %}Locate{% else %}No Location{% endif %}
                 </button>
-                <form method="post" action="{% url 'favorites' %}">
-                  {% csrf_token %}
-                  <input type="hidden" name="university_id" value="{{ uni.id }}">
-                  <button type="submit" class="favorite-btn">
-                    <i class="fas fa-heart"></i>Add to Favorites
-                  </button>
-                </form>
               </div>
               {% endif %}
             </div>

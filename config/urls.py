@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include, reverse
 from django.http import HttpResponseRedirect
-from api.views_frontend import home_view, favorites_view
+from api.views_frontend import home_view, university_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),    
@@ -26,8 +26,7 @@ urlpatterns = [
     path('api/', include('api.urls')),
     
     path('', home_view, name='home'),
-    path('universities/', home_view, name='universities'),
-    path('favorites/', favorites_view, name='favorites'),
+    path('universities/', university_view, name='universities'),
 
     # Social Auth and Account URLs
     path('accounts/', include('allauth.urls')),

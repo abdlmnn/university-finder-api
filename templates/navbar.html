@@ -52,6 +52,8 @@
           <i class="fas fa-home" style="margin-right: 8px"></i>Home
         </a>
 
+        {% if user.is_authenticated %}
+
         <a
           href="/universities/"
           style="
@@ -65,25 +67,10 @@
           onmouseover="this.style.background='rgba(102, 126, 234, 0.1)'; this.style.color='#667eea'"
           onmouseout="this.style.background='transparent'; this.style.color='#4a5568'"
         >
-          <i class="fas fa-graduation-cap" style="margin-right: 8px"></i>Universities
+          <i class="fas fa-graduation-cap" style="margin-right: 8px"></i
+          >Universities
         </a>
 
-        {% if user.is_authenticated %}
-        <a
-          href="/favorites/"
-          style="
-            color: #4a5568;
-            text-decoration: none;
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-          "
-          onmouseover="this.style.background='rgba(102, 126, 234, 0.1)'; this.style.color='#667eea'"
-          onmouseout="this.style.background='transparent'; this.style.color='#4a5568'"
-        >
-          <i class="fas fa-heart" style="margin-right: 8px"></i>Favorites
-        </a>
         {% endif %}
 
         <!-- User Menu -->

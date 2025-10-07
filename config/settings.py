@@ -142,8 +142,6 @@ INSTALLED_APPS = [
     'api',                      # Your app
 ]
 
-SITE_ID = 2
-
 # Allauth settings
 
 # Instead of ACCOUNT_EMAIL_REQUIRED

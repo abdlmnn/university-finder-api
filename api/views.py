@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from django.http import JsonResponse
 import requests
 from decouple import config
-from .models import University, FavoriteUniversity
-from .serializers import UniversitySerializer, FavoriteUniversitySerializer
+from .models import University
+from .serializers import UniversitySerializer
 from rest_framework.permissions import IsAuthenticated
 
 GOOGLE_API_KEY = config("GOOGLE_API_KEY")
@@ -182,24 +182,3 @@ class UniversityLocationsView(APIView):
         return Response(locations)
 
 
-# --------------------------
-# 4. Favorite universities
-# --------------------------
-class FavoriteUniversityListCreateView(generics.ListCreateAPIView):
-    serializer_class = FavoriteUniversitySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return FavoriteUniversity.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        university_data = self.request.data.get("university")
-        if not university_data:
-            raise ValueError("Missing 'university' data")
-
-        # Save or get university
-        uni_obj, created = University.objects.get_or_create(
-            name=university_data.get("name"),
-            country=university_data.get("country", "")
-        )
-        serializer.save(user=self.request.user, university=uni_obj)

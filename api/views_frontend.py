@@ -2,11 +2,16 @@ import os
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import University, FavoriteUniversity
+from .models import University
 from decouple import config
 
-@login_required
 def home_view(request):
+    return render(request, "home.html", {
+        'google_api_key': config('GOOGLE_API_KEY'),
+    })
+
+@login_required
+def university_view(request):
     # Define the specific countries to display
     available_countries = [
         "Philippines",
@@ -26,25 +31,6 @@ def home_view(request):
     loading = False
     error = None
 
-    # Handle adding to favorites
-    if request.method == 'POST':
-        university_id = request.POST.get('university_id')
-        if university_id:
-            try:
-                university = University.objects.get(id=university_id)
-                FavoriteUniversity.objects.get_or_create(
-                    user=request.user,
-                    university=university
-                )
-                # Redirect back to the same page with the current country selection and search
-                redirect_url = f"{request.path}?country={selected_country}"
-                if search_query:
-                    redirect_url += f"&search={search_query}"
-                return redirect(redirect_url)
-            except University.DoesNotExist:
-                error = "University not found."
-            except Exception as e:
-                error = f"Error adding to favorites: {str(e)}"
 
     # Always load universities for the selected country (defaulting to Philippines)
     try:
@@ -78,21 +64,3 @@ def home_view(request):
         return render(request, "home.html", context)
 
 
-@login_required
-def favorites_view(request):
-    if request.method == 'POST':
-        favorite_id = request.POST.get('favorite_id')
-        if favorite_id:
-            try:
-                favorite = FavoriteUniversity.objects.get(id=favorite_id, user=request.user)
-                favorite.delete()
-                messages.success(request, f'Removed {favorite.university.name} from favorites.')
-            except FavoriteUniversity.DoesNotExist:
-                messages.error(request, 'Favorite not found.')
-        return redirect('favorites')
-
-    favorites = FavoriteUniversity.objects.filter(user=request.user).select_related('university')
-    context = {
-        'favorites': favorites,
-    }
-    return render(request, "favorites.html", context)
